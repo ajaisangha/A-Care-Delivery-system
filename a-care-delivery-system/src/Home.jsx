@@ -1,9 +1,8 @@
-// Home.jsx
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 
-const Home = ({ user }) => {
+const Home = ({ user, onLogout }) => {
   const [deliveryRequests, setDeliveryRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -12,7 +11,10 @@ const Home = ({ user }) => {
     const fetchDeliveryRequests = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "delivery_requests"));
-        const requests = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const requests = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setDeliveryRequests(requests);
         setLoading(false);
       } catch (err) {
@@ -27,12 +29,27 @@ const Home = ({ user }) => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
-      <h1>Welcome, {user.Name}</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1>Welcome, {user.name}</h1>
+
+        <button
+          onClick={onLogout}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "4px",
+            backgroundColor: "#f44336",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
+      </div>
 
       <h2 style={{ marginTop: "20px" }}>Delivery Requests</h2>
 
       {loading && <p>Loading delivery requests...</p>}
-
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {!loading && !error && deliveryRequests.length === 0 && (
