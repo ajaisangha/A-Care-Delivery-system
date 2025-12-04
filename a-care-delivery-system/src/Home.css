@@ -1,0 +1,84 @@
+/* ============================
+   HOME PAGE LAYOUT
+============================ */
+.home-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Welcome + Logout Row */
+.home-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.home-header h1 {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+/* Logout Button */
+.logout-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background-color: #dc3545;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background-color: #bb2d3b;
+}
+
+/* Delivery Requests Title */
+.delivery-title {
+  margin-top: 25px;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+/* Delivery Request List */
+.delivery-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 15px;
+}
+
+.delivery-item {
+  padding: 15px;
+  margin-bottom: 15px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.delivery-item p {
+  margin: 5px 0;
+  font-size: 1rem;
+}
+
+.no-requests {
+  margin-top: 20px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #555;
+  text-align: center;
+}
+
+/* Error Message */
+.error-text {
+  color: red;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+/* Loading text */
+.loading-text {
+  font-size: 1.1rem;
+  margin-top: 15px;
+}

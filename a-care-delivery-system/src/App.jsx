@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import Home from "./Home";
 import CryptoJS from "crypto-js";
+import "./App.css";
 
 const SALT = "Nirmal-Sangha";
 
@@ -14,9 +15,6 @@ const App = () => {
   const [error, setError] = useState("");
   const [showResetDialog, setShowResetDialog] = useState(false);
 
-  // ==============================
-  // Restore Session
-  // ==============================
   useEffect(() => {
     const savedUser = localStorage.getItem("employeeSession");
     if (savedUser) {
@@ -25,40 +23,32 @@ const App = () => {
     }
   }, []);
 
-  const hashPassword = (password) =>
-    CryptoJS.MD5(password + SALT).toString();
+  const hashPassword = (p) => CryptoJS.MD5(p + SALT).toString();
 
-  // ==============================
-  // Check Employee ID
-  // ==============================
   const handleCheckEmployee = async (e) => {
     e.preventDefault();
     if (!employeeId) return;
 
-    const idString = String(employeeId).trim();
+    const id = String(employeeId).trim();
 
     try {
-      const docRef = doc(db, "users", idString);
-      const docSnap = await getDoc(docRef);
+      const ref = doc(db, "users", id);
+      const snap = await getDoc(ref);
 
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setUserDoc({ id: docSnap.id, ...data });
+      if (snap.exists()) {
+        const data = snap.data();
+        setUserDoc({ id: snap.id, ...data });
         setStep(data.password ? "login" : "register");
         setError("");
       } else {
         setError("Employee not found");
       }
-    } catch (err) {
-      console.error("Firestore error:", err);
+    } catch {
       setError("Server down. Please try again later.");
     }
   };
 
-  // ==============================
-  // Password Rules
-  // ==============================
-  const passwordRules = {
+  const rules = {
     length: password.length >= 8,
     upper: /[A-Z]/.test(password),
     lower: /[a-z]/.test(password),
@@ -66,16 +56,9 @@ const App = () => {
     special: /[^A-Za-z0-9]/.test(password),
   };
 
-  const isPasswordValid =
-    passwordRules.length &&
-    passwordRules.upper &&
-    passwordRules.lower &&
-    passwordRules.number &&
-    passwordRules.special;
+  const validPassword =
+    rules.length && rules.upper && rules.lower && rules.number && rules.special;
 
-  // ==============================
-  // Login
-  // ==============================
   const handleLogin = (e) => {
     e.preventDefault();
     const hashedInput = hashPassword(password);
@@ -88,34 +71,24 @@ const App = () => {
     }
   };
 
-  // ==============================
-  // Register
-  // ==============================
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!isPasswordValid) return;
+    if (!validPassword) return;
 
     try {
-      const hashedPassword = hashPassword(password);
-      const docRef = doc(db, "users", String(employeeId).trim());
+      const hash = hashPassword(password);
+      const ref = doc(db, "users", String(employeeId).trim());
+      await setDoc(ref, { password: hash }, { merge: true });
 
-      await setDoc(docRef, { password: hashedPassword }, { merge: true });
-
-      const updatedUser = { ...userDoc, password: hashedPassword };
-      setUserDoc(updatedUser);
-      localStorage.setItem("employeeSession", JSON.stringify(updatedUser));
-
+      const updated = { ...userDoc, password: hash };
+      setUserDoc(updated);
+      localStorage.setItem("employeeSession", JSON.stringify(updated));
       setStep("home");
-      setError("");
-    } catch (err) {
-      console.error("Firestore error:", err);
+    } catch {
       setError("Server down. Please try again later.");
     }
   };
 
-  // ==============================
-  // Logout
-  // ==============================
   const handleLogout = () => {
     localStorage.removeItem("employeeSession");
     setUserDoc(null);
@@ -124,67 +97,59 @@ const App = () => {
     setStep("employeeId");
   };
 
-  // ==============================
-  // Password Reset Dialog
-  // ==============================
-  const handleResetPassword = () => {
-    setShowResetDialog(true);
-  };
+  const handleResetPassword = () => setShowResetDialog(true);
 
   const closeResetDialog = () => {
     setShowResetDialog(false);
     setUserDoc(null);
     localStorage.removeItem("employeeSession");
     setStep("employeeId");
-    setEmployeeId("");
     setPassword("");
+    setEmployeeId("");
     setError("");
   };
 
-  // ==============================
-  // HOME PAGE
-  // ==============================
-  if (step === "home") {
-    return <Home user={userDoc} onLogout={handleLogout} />;
-  }
+  if (step === "home") return <Home user={userDoc} onLogout={handleLogout} />;
 
-  // ==============================
-  // PAGE RENDERING
-  // ==============================
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", position: "relative" }}>
-
-      {/* Employee ID Page */}
+    <div className="app-wrapper">
+      {/* EMPLOYEE ID */}
       {step === "employeeId" && (
-        <form
-          onSubmit={handleCheckEmployee}
-          style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "20px", border: "1px solid #ccc", borderRadius: "8px" }}
-        >
+        <form className="auth-form" onSubmit={handleCheckEmployee}>
           <h2>Enter Employee ID</h2>
-
           <input
             type="text"
+            className="auth-input"
             placeholder="Employee ID"
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
             required
-            style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
           />
-
-          {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
-
-          <button type="submit" style={{ padding: "10px", borderRadius: "4px", backgroundColor: "#4CAF50", color: "white", border: "none" }}>
+          {error && <p className="error-msg">{error}</p>}
+          <button className="auth-btn" type="submit">
             Next
           </button>
         </form>
       )}
 
-      {/* Login & Register */}
+      {/* LOGIN / REGISTER */}
       {(step === "login" || step === "register") && (
         <form
+          className="auth-form"
           onSubmit={step === "login" ? handleLogin : handleRegister}
-          style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "20px", border: "1px solid #ccc", borderRadius: "8px", width: "300px" }}
         >
+          <button
+            type="button"
+            className="back-btn"
+            onClick={() => {
+              setStep("employeeId");
+              setPassword("");
+              setError("");
+            }}
+          >
+            &larr; Back
+          </button>
+
           <h2>
             {step === "login"
               ? `Welcome back, ${userDoc.name}`
@@ -193,116 +158,59 @@ const App = () => {
 
           <input
             type="password"
+            className="auth-input"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
           />
 
           {step === "register" && (
-            <div style={{ fontSize: "14px", marginTop: "-5px" }}>
+            <div className="password-rules">
               <p>Password must contain:</p>
-              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-                <li style={{ color: passwordRules.length ? "green" : "red" }}>
-                  • At least 8 characters
-                </li>
-                <li style={{ color: passwordRules.upper ? "green" : "red" }}>
-                  • At least 1 uppercase letter
-                </li>
-                <li style={{ color: passwordRules.lower ? "green" : "red" }}>
-                  • At least 1 lowercase letter
-                </li>
-                <li style={{ color: passwordRules.number ? "green" : "red" }}>
-                  • At least 1 number
-                </li>
-                <li style={{ color: passwordRules.special ? "green" : "red" }}>
-                  • At least 1 special character
-                </li>
-              </ul>
+              <div className={`password-rule ${rules.length ? "valid" : "invalid"}`}>
+                • Min 8 characters
+              </div>
+              <div className={`password-rule ${rules.upper ? "valid" : "invalid"}`}>
+                • Uppercase letter
+              </div>
+              <div className={`password-rule ${rules.lower ? "valid" : "invalid"}`}>
+                • Lowercase letter
+              </div>
+              <div className={`password-rule ${rules.number ? "valid" : "invalid"}`}>
+                • Number
+              </div>
+              <div className={`password-rule ${rules.special ? "valid" : "invalid"}`}>
+                • Special character
+              </div>
             </div>
           )}
 
-          {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
+          {error && <p className="error-msg">{error}</p>}
 
           {step === "login" && (
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              style={{
-                marginTop: "5px",
-                padding: "6px",
-                border: "none",
-                background: "none",
-                color: "#007bff",
-                textDecoration: "underline",
-                cursor: "pointer",
-              }}
-            >
+            <button type="button" className="reset-btn" onClick={handleResetPassword}>
               Reset Password
             </button>
           )}
 
           <button
+            className="auth-btn"
             type="submit"
-            disabled={step === "register" && !isPasswordValid}
-            style={{
-              padding: "10px",
-              borderRadius: "4px",
-              backgroundColor:
-                step === "register" && !isPasswordValid ? "#888" : "#4CAF50",
-              color: "white",
-              border: "none",
-              cursor:
-                step === "register" && !isPasswordValid ? "not-allowed" : "pointer",
-            }}
+            disabled={step === "register" && !validPassword}
           >
             {step === "login" ? "Login" : "Register"}
           </button>
         </form>
       )}
 
-      {/* Reset Password Dialog */}
+      {/* RESET DIALOG */}
       {showResetDialog && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "30px",
-              borderRadius: "8px",
-              textAlign: "center",
-              maxWidth: "400px",
-            }}
-          >
+        <div className="dialog-overlay">
+          <div className="dialog-box">
             <h3>Reset Password</h3>
             <p>Please contact Owner/Manager to reset password</p>
-
-            <button
-              onClick={closeResetDialog}
-              style={{
-                marginTop: "15px",
-                padding: "8px 16px",
-                borderRadius: "4px",
-                backgroundColor: "#4CAF50",
-                color: "white",
-                border: "none",
-              }}
-            >
-              OK
-            </button>
+            <button onClick={closeResetDialog}>OK</button>
           </div>
         </div>
       )}
