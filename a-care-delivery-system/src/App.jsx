@@ -14,9 +14,9 @@ const App = () => {
   const [error, setError] = useState("");
   const [showResetDialog, setShowResetDialog] = useState(false);
 
-  // ==========================
-  //  Restore Session on Reload
-  // ==========================
+  // ==============================
+  // Restore Session
+  // ==============================
   useEffect(() => {
     const savedUser = localStorage.getItem("employeeSession");
     if (savedUser) {
@@ -25,8 +25,12 @@ const App = () => {
     }
   }, []);
 
-  const hashPassword = (password) => CryptoJS.MD5(password + SALT).toString();
+  const hashPassword = (password) =>
+    CryptoJS.MD5(password + SALT).toString();
 
+  // ==============================
+  // Check Employee ID
+  // ==============================
   const handleCheckEmployee = async (e) => {
     e.preventDefault();
     if (!employeeId) return;
@@ -40,7 +44,6 @@ const App = () => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setUserDoc({ id: docSnap.id, ...data });
-
         setStep(data.password ? "login" : "register");
         setError("");
       } else {
@@ -52,6 +55,27 @@ const App = () => {
     }
   };
 
+  // ==============================
+  // Password Rules
+  // ==============================
+  const passwordRules = {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  };
+
+  const isPasswordValid =
+    passwordRules.length &&
+    passwordRules.upper &&
+    passwordRules.lower &&
+    passwordRules.number &&
+    passwordRules.special;
+
+  // ==============================
+  // Login
+  // ==============================
   const handleLogin = (e) => {
     e.preventDefault();
     const hashedInput = hashPassword(password);
@@ -59,15 +83,17 @@ const App = () => {
     if (hashedInput === userDoc.password) {
       localStorage.setItem("employeeSession", JSON.stringify(userDoc));
       setStep("home");
-      setError("");
     } else {
       setError("Incorrect password");
     }
   };
 
+  // ==============================
+  // Register
+  // ==============================
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!password) return;
+    if (!isPasswordValid) return;
 
     try {
       const hashedPassword = hashPassword(password);
@@ -77,7 +103,6 @@ const App = () => {
 
       const updatedUser = { ...userDoc, password: hashedPassword };
       setUserDoc(updatedUser);
-
       localStorage.setItem("employeeSession", JSON.stringify(updatedUser));
 
       setStep("home");
@@ -88,6 +113,9 @@ const App = () => {
     }
   };
 
+  // ==============================
+  // Logout
+  // ==============================
   const handleLogout = () => {
     localStorage.removeItem("employeeSession");
     setUserDoc(null);
@@ -96,26 +124,33 @@ const App = () => {
     setStep("employeeId");
   };
 
+  // ==============================
+  // Password Reset Dialog
+  // ==============================
   const handleResetPassword = () => {
     setShowResetDialog(true);
   };
 
   const closeResetDialog = () => {
     setShowResetDialog(false);
-
     setUserDoc(null);
     localStorage.removeItem("employeeSession");
-
     setStep("employeeId");
     setEmployeeId("");
     setPassword("");
     setError("");
   };
 
+  // ==============================
+  // HOME PAGE
+  // ==============================
   if (step === "home") {
     return <Home user={userDoc} onLogout={handleLogout} />;
   }
 
+  // ==============================
+  // PAGE RENDERING
+  // ==============================
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", position: "relative" }}>
 
@@ -138,20 +173,17 @@ const App = () => {
 
           {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
 
-          <button
-            type="submit"
-            style={{ padding: "10px", borderRadius: "4px", backgroundColor: "#4CAF50", color: "white", border: "none" }}
-          >
+          <button type="submit" style={{ padding: "10px", borderRadius: "4px", backgroundColor: "#4CAF50", color: "white", border: "none" }}>
             Next
           </button>
         </form>
       )}
 
-      {/* Login/Register Page */}
+      {/* Login & Register */}
       {(step === "login" || step === "register") && (
         <form
           onSubmit={step === "login" ? handleLogin : handleRegister}
-          style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "20px", border: "1px solid #ccc", borderRadius: "8px" }}
+          style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "20px", border: "1px solid #ccc", borderRadius: "8px", width: "300px" }}
         >
           <h2>
             {step === "login"
@@ -167,6 +199,29 @@ const App = () => {
             required
             style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
           />
+
+          {step === "register" && (
+            <div style={{ fontSize: "14px", marginTop: "-5px" }}>
+              <p>Password must contain:</p>
+              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                <li style={{ color: passwordRules.length ? "green" : "red" }}>
+                  • At least 8 characters
+                </li>
+                <li style={{ color: passwordRules.upper ? "green" : "red" }}>
+                  • At least 1 uppercase letter
+                </li>
+                <li style={{ color: passwordRules.lower ? "green" : "red" }}>
+                  • At least 1 lowercase letter
+                </li>
+                <li style={{ color: passwordRules.number ? "green" : "red" }}>
+                  • At least 1 number
+                </li>
+                <li style={{ color: passwordRules.special ? "green" : "red" }}>
+                  • At least 1 special character
+                </li>
+              </ul>
+            </div>
+          )}
 
           {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
 
@@ -190,7 +245,17 @@ const App = () => {
 
           <button
             type="submit"
-            style={{ padding: "10px", borderRadius: "4px", backgroundColor: "#4CAF50", color: "white", border: "none" }}
+            disabled={step === "register" && !isPasswordValid}
+            style={{
+              padding: "10px",
+              borderRadius: "4px",
+              backgroundColor:
+                step === "register" && !isPasswordValid ? "#888" : "#4CAF50",
+              color: "white",
+              border: "none",
+              cursor:
+                step === "register" && !isPasswordValid ? "not-allowed" : "pointer",
+            }}
           >
             {step === "login" ? "Login" : "Register"}
           </button>
